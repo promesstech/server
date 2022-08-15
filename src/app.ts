@@ -15,7 +15,7 @@ import cors from "cors";
 import Axios from "axios";
 
 import {
-    createDatabase,
+    connectToDatabase,
     disconnectFromDatabase,
 } from "./utils/database";
 import { handleError } from "./utils/errors";
@@ -31,7 +31,7 @@ declare module "express" {
     }
 };
 
-const database = createDatabase(config.database.connectionString);
+const database = connectToDatabase();
 const router = express.Router();
 
 const app: Application = express()
@@ -113,8 +113,6 @@ const gracefulShutdown = (signal: string) => {
 signals.forEach(signal => {
     gracefulShutdown(signal);
 });
-
-// {"event":"messageCreate","data":{"content":"some message content","channel":{"id":"chn_12345678"}}}
 
 export {
     router,

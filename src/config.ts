@@ -7,5 +7,4 @@ export default {
         env,
         websiteUrl,
     },
-    "database": { connectionString: process.env.DATABASE_CONNECTION_STRING || "" },
 };

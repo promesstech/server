@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  referentialIntegrity = "prisma"
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+model User {
+  id        String   @id
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  members Member[]
+}
+
+model Organization {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+
+  members Member[]
+  teams   Team[]
+  roles   Role[]
+  chats   Chat[]
+  projects Project[]
+}
+
+model Member {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId String
+
+  role   Role   @relation(fields: [roleId], references: [id])
+  roleId String
+
+  Task    Task?     @relation(fields: [taskId], references: [id])
+  taskId  String?
+  
+  messages Message[]
+}
+
+model Team {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+
+  members Member[]
+}
+
+model Role {
+  id        String   @id
+  name      String
+  level     Int
+  createdAt DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+
+  members Member[]
+}
+
+model Chat {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+
+  messages Message[]
+}
+
+model Message {
+  id        String   @id
+  content   String
+  createdAt DateTime @default(now())
+
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  chatId String
+
+  author   Member @relation(fields: [authorId], references: [id])
+  authorId String
+}
+
+model Project {
+  id   String @id
+  name String
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+
+  Task           Task[]
+}
+
+model Task {
+  id    String @id
+  title String
+
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+
+  assignees Member[]
+}
