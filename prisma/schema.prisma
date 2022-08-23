@@ -12,6 +12,8 @@ generator client {
   previewFeatures = ["referentialIntegrity"]
 }
 
+// user
+
 model User {
   id        String   @id
   name      String
@@ -19,19 +21,72 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  members Member[]
+  members       Member[]
+  organizations Organization[]
+  messages      Message[]
+  Session       Session[]
 }
+
+model Session {
+  id        String   @id
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
+
+// chat
+
+enum ChatType {
+  GROUP_CHAT
+  DIRECT_CHAT
+  ORGANIZATION_CHAT
+}
+
+model Chat {
+  id        String   @id
+  name      String
+  type      ChatType
+  createdAt DateTime @default(now())
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+
+  messages Message[]
+}
+
+model Message {
+  id        String   @id @db.VarChar(512)
+  content   String
+  createdAt DateTime @default(now())
+
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  chatId String
+
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+}
+
+// organization
 
 model Organization {
   id        String   @id
   name      String
   createdAt DateTime @default(now())
 
-  members Member[]
-  teams   Team[]
-  roles   Role[]
-  chats   Chat[]
-  projects Project[]
+  // creatorId is a userId
+  // a separate member is created for the creator in the orgainzation
+  creator   User   @relation(fields: [creatorId], references: [id])
+  creatorId String
+
+  members        Member[]
+  teams          Team[]
+  roles          Role[]
+  chats          Chat[]
+  projects       Project[]
+  folders        Folder[]
+  calendarEvents CalendarEvent[]
 }
 
 model Member {
@@ -45,16 +100,12 @@ model Member {
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
 
-  team   Team   @relation(fields: [teamId], references: [id])
-  teamId String
+  team   Team?   @relation(fields: [teamId], references: [id])
+  teamId String?
 
-  role   Role   @relation(fields: [roleId], references: [id])
-  roleId String
-
-  Task    Task?     @relation(fields: [taskId], references: [id])
-  taskId  String?
-  
-  messages Message[]
+  roles          Role[]
+  tasks          Task[]
+  calendarEvents CalendarEvent[]
 }
 
 model Team {
@@ -80,7 +131,7 @@ model Role {
   members Member[]
 }
 
-model Chat {
+model Project {
   id        String   @id
   name      String
   createdAt DateTime @default(now())
@@ -88,37 +139,75 @@ model Chat {
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
 
-  messages Message[]
-}
-
-model Message {
-  id        String   @id
-  content   String
-  createdAt DateTime @default(now())
-
-  chat   Chat   @relation(fields: [chatId], references: [id])
-  chatId String
-
-  author   Member @relation(fields: [authorId], references: [id])
-  authorId String
-}
-
-model Project {
-  id   String @id
-  name String
-
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
-
-  Task           Task[]
+  tasks Task[]
 }
 
 model Task {
-  id    String @id
-  title String
+  id        String   @id
+  title     String
+  createdAt DateTime @default(now())
 
   project   Project @relation(fields: [projectId], references: [id])
   projectId String
 
   assignees Member[]
+}
+
+// org_calendar
+
+model CalendarEvent {
+  id        String   @id
+  date      DateTime
+  allDay    Boolean
+  title     String
+  createdAt DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+
+  people Member[]
+}
+
+// org_files
+
+enum FileExtension {
+  PNG
+  JPG
+  TXT
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  TEXT
+  OTHER
+}
+
+model Folder {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+
+  // a folder can have one parent folder
+  parentFolder   Folder? @relation("ParentFolder", fields: [parentFolderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parentFolderId String?
+
+  // a folder can have multiple child folders
+  childFolders Folder[] @relation("ParentFolder")
+  files        File[]
+}
+
+model File {
+  id        String        @id
+  name      String
+  extension FileExtension
+  type      FileType
+  data      String
+  createdAt DateTime      @default(now())
+
+  parentFolder   Folder @relation(fields: [parentFolderId], references: [id])
+  parentFolderId String
 }

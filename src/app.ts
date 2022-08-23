@@ -1,18 +1,8 @@
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require("dotenv").config();
-import express, {
-    Application,
-    Request,
-    Response,
-    NextFunction,
-} from "express";
-
-import compression from "compression";
-import bodyParser from "body-parser";
-import helmet from "helmet";
-import cors from "cors";
-
-import Axios from "axios";
+import express from "express";
+import { User } from "@prisma/client";
 
 import {
     connectToDatabase,
@@ -20,74 +10,46 @@ import {
 } from "./utils/database";
 import { handleError } from "./utils/errors";
 import { logger } from "./utils/logger";
-import { getServerURL } from "./utils/core";
+import {
+    setupAxios,
+    setupRouter,
+    setupServer,
+    setupApp,
+    setupWebsocketServer,
+    setupGoogleOAuth2,
+    setupMulter,
+} from "./utils/setup";
 
-import config from "./config";
-import createRoutes from "./routes";
 
 declare module "express" {
     interface Request {
         baseServerUrl?: string;
+        user?: User;
     }
 };
 
 const database = connectToDatabase();
-const router = express.Router();
+const router = setupRouter();
+const app = setupApp(router);
+const server = setupServer(app);
+const axios = setupAxios();
+const io = setupWebsocketServer(server);
+const google = setupGoogleOAuth2();
+const multer = setupMulter();
 
-const app: Application = express()
-    .use(helmet())
-    .use(compression())
-    .use(cors({
-        origin: config.core.websiteUrl,
-        credentials: true,
-    }))
-    .use(bodyParser.json())
-    .use((req: Request, res: Response, next: NextFunction) => {
-        const baseUrl = getServerURL(req);
-        // eslint-disable-next-line no-param-reassign
-        req.baseServerUrl = baseUrl;
-        next();
-    })
-    // .use((req: Request, res: Response, next: NextFunction) => {
-    //     console.log(req.cookies);
-    //     next();
-    // })
-    .use("/v1", router);
-
-// TODO: Serialize session
-
-const axios = Axios.create({
-    timeout: 2500,
-    validateStatus: () => true,
-});
-
-router.get("/", (req: Request, res: Response) => {
-    res.json({ success: true });
-});
-
-app.use("*", (req: Request, res: Response) => {
-    // structured "404 not found" error response
-    res.status(404).send({
-        message: "Not Found",
-        code: 404,
-    });
-});
-
+// certain routes use the io instance
+// so it has to exist before they are imported
+// so the import statement is after the wss is setup
+import createRoutes from "./routes";
 createRoutes(router);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err, req: Request, res: Response, next: NextFunction) => {
+app.use((err, req: express.Request, res: express.Response) => {
     handleError(err, res);
 });
 
 process.on("unhandledRejection", err => handleError(err));
 process.on("uncaughtException", err => handleError(err));
 
-const PORT = config.core.PORT;
-
-const server = app.listen(PORT, () => {
-    logger.info(`Server is running at http://localhost:${PORT}`);
-});
 
 const signals = [
     "SIGTERM",
@@ -98,10 +60,8 @@ const gracefulShutdown = (signal: string) => {
     process.on(signal, () => {
         logger.info(`Received ${signal}. Exiting...`);
         
-        // disconnectFromDatabase().then(() => {
-        //     logger.info("Database connection closed");
-        // });
         disconnectFromDatabase();
+        logger.info("Database connection closed");
         
         server.close(() => {
             logger.info("Server closed");
@@ -118,4 +78,7 @@ export {
     router,
     database,
     axios,
+    io,
+    google,
+    multer,
 };

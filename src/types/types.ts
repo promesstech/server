@@ -1,100 +1,84 @@
-export interface Organization {
-    // org_id
+export interface Avatar {
+    id: string;
+    url: string;
+};
+
+export interface User {
     id: string;
     name: string;
-    members: string[];
-    roles: string[];
-    teams: string[];
-    tasks: string[];
-    project: string[];
-    files: string[];
-    chats: string[];
-    folders: string[];
+    avatar: Avatar;
+    email: string;
 };
-export interface Chat {
-    // chat_id
+
+export interface Role {
     id: string;
     name: string;
-    organizationId: string;
-    messages: string[];
+    level: "c-role" | "vice" | "manager" | "staff" | "beginner";
 };
-export interface Message {
-    // msg_id
+
+export interface Team {
     id: string;
+    name: string;
+};
+
+interface ExtendedUser {
+    roles: Role[];
+    team: Team;
+};
+
+export interface Member extends User, ExtendedUser {};
+
+export interface Member {
+    name: string;
+}
+
+export interface PartialMessage {
     content: string;
-    createdAt: number;
     chatId: string;
     authorId: string;
 };
-export interface Role {
-    // role_id
+
+export interface Message {
     id: string;
-    name: string;
-    level: "ADMIN" | "USER";
-    organizationId: string;
+    content: string;
+    // in the database it's saved as a string
+    // but before we send it to the client we convert it to a number
+    // or the client converts it in the array
+    createdAt: number;
+    authorId: string;
+    author: User;
+    chatId: string;
 };
-export interface User {
-    // user_id
-    id: string;
-    name: string;
-    email: string;
-    password: string;
-    members: string[];
-};
-export interface Member {
-    // member_id
-    id: string;
-    name: string;
-    userId: string;
-    organizationId: string;
-    teamId: string;
-    roles: string[];
-};
-export interface Team {
-    // team_id
-    id: string;
-    name: string;
-    organizationId: string;
-    members: string[];
-};
+
 export interface Project {
-    // proj_id
+    id: string;
+    name: string;
+};
+
+export interface Organization {
+    id: string;
+    name: string;
+    members: Member[];
+    teams: Team[];
+    projects: Project[];
+    roles: Role[];
+};
+
+export interface Chat {
     id: string;
     name: string;
     organizationId: string;
-    tasks: string[];
 };
+
 export interface Task {
-    // task_id
     id: string;
-    name: string;
-    projectId: string;
-    assignees: string[];
+    createdBy: Member;
+    createdAt: number;
+    description: string;
+    status: "todo" | "in-progress" | "testing" | "done"
+    assignees: Member[];
+    dueDate: number | "none";
+    priority: "none" | "low" | "medium" | "high" | "urgent";
+    team: Team;
+    project: Project;
 };
-export interface CalendarEvent {
-    // evt_id
-    id: string;
-    date: number;
-    allDay: boolean;
-    title: string;
-    people: string[];
-};
-export interface File {
-    // file_id
-    id: string;
-    type: "image" | "text";
-    name: string;
-    extension: "png" | "jpg" | "txt";
-    data: string;
-    folderId: string;
-};
-export interface Folder {
-    // folder_id
-    id: string;
-    name: string;
-    organizationId: string;
-    folderId: string;
-    files: string[];
-    folders: string[];
-}
-// export interface Session { id: string };

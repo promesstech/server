@@ -24,6 +24,7 @@ module.exports = {
         "@typescript-eslint/no-extra-semi": [
             "off",
         ],
+        "line-between-class-members": "off",
         "no-explicit-any": [
             "off",
         ],
@@ -45,10 +46,6 @@ module.exports = {
             {
                 "properties": "always",
             },
-        ],
-        "curly": [
-            "error",
-            "multi",
         ],
         "default-case": [
             "error",
